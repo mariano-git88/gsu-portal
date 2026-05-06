@@ -59,26 +59,124 @@
       color: #999;
       font-size: 12px;
     }
+
+    /* Login */
+    .login-form {
+      max-width: 320px;
+      margin: 32px 0;
+    }
+    .login-form input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 16px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .login-form button {
+      padding: 9px 20px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      background: #1a3a5c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    .login-form button:hover { background: #000; }
+    .login-form .error {
+      color: #c00;
+      font-size: 13px;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <img src="logo.png" alt="Grupo Suprabond Uruguay" class="logo">
   <h1>Grupo Suprabond Uruguay</h1>
-  <p class="lead">Aplicaciones internas</p>
-  <ul>
-    <li>
-      <a href="https://gsu-gestion-vendedores.streamlit.app/">Gestión de Vendedores</a>
-      <span class="desc">Dashboard semanal del Jefe de Ventas — métricas, cartera, análisis.</span>
-    </li>
-    <li>
-      <a href="https://gsu-comisiones.streamlit.app/">Liquidación de Comisiones</a>
-      <span class="desc">Cálculo mensual de comisiones por vendedor.</span>
-    </li>
-    <li>
-      <a href="https://gsu-facturador.streamlit.app/">Facturación Masiva</a>
-      <span class="desc">Emisión masiva de facturas electrónicas desde órdenes de venta.</span>
-    </li>
-  </ul>
-  <footer>© Grupo Suprabond Uruguay</footer>
+  <p class="lead" id="lead-text">Acceso restringido</p>
+
+  <!-- Pantalla de login (visible por default). -->
+  <form id="loginForm" class="login-form">
+    <input type="password" id="passwordInput" placeholder="Contraseña" autofocus autocomplete="current-password">
+    <button type="submit">Ingresar</button>
+    <div class="error hidden" id="errorMsg">Contraseña incorrecta.</div>
+  </form>
+
+  <!-- Pantalla del portal (oculta hasta autenticación). -->
+  <div id="portalContent" class="hidden">
+    <ul>
+      <li>
+        <a href="https://gsu-gestion-vendedores.streamlit.app/">Gestión de Vendedores</a>
+        <span class="desc">Dashboard semanal del Jefe de Ventas — métricas, cartera, análisis.</span>
+      </li>
+      <li>
+        <a href="https://gsu-comisiones.streamlit.app/">Liquidación de Comisiones</a>
+        <span class="desc">Cálculo mensual de comisiones por vendedor.</span>
+      </li>
+      <li>
+        <a href="https://gsu-facturador.streamlit.app/">Facturación Masiva</a>
+        <span class="desc">Emisión masiva de facturas electrónicas desde órdenes de venta.</span>
+      </li>
+    </ul>
+    <footer>© Grupo Suprabond Uruguay</footer>
+  </div>
+
+  <script>
+    // Hash SHA-256 del password autorizado. REEMPLAZAR antes de subir.
+    // Para generar: ver instrucciones en README.md.
+    const STORED_HASH = "6380165fd0ccb4aea621494356142e432c5c4111eb2c6712a8b0dedc836e0f60";
+    const REMEMBER_DAYS = 30;
+    const LS_KEY = "suprabond_portal_auth_v1";
+
+    async function sha256Hex(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    function isRemembered() {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return false;
+      try {
+        const { expiresAt } = JSON.parse(raw);
+        if (Date.now() < expiresAt) return true;
+        localStorage.removeItem(LS_KEY);
+      } catch (_) {
+        localStorage.removeItem(LS_KEY);
+      }
+      return false;
+    }
+
+    function showPortal() {
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("errorMsg").classList.add("hidden");
+      document.getElementById("portalContent").classList.remove("hidden");
+      document.getElementById("lead-text").textContent = "Aplicaciones internas";
+    }
+
+    if (isRemembered()) {
+      showPortal();
+    } else {
+      document.getElementById("loginForm").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const pwd = document.getElementById("passwordInput").value;
+        const hash = await sha256Hex(pwd);
+        if (hash === STORED_HASH) {
+          const expiresAt = Date.now() + REMEMBER_DAYS * 24 * 60 * 60 * 1000;
+          localStorage.setItem(LS_KEY, JSON.stringify({ expiresAt }));
+          showPortal();
+        } else {
+          document.getElementById("errorMsg").classList.remove("hidden");
+          document.getElementById("passwordInput").value = "";
+        }
+      });
+    }
+  </script>
 </body>
 </html>
