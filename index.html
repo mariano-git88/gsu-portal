@@ -130,7 +130,7 @@
     // Hash SHA-256 del password autorizado. REEMPLAZAR antes de subir.
     // Para generar: ver instrucciones en README.md.
     const STORED_HASH = "6380165fd0ccb4aea621494356142e432c5c4111eb2c6712a8b0dedc836e0f60";
-    const REMEMBER_DAYS = 30;
+    const REMEMBER_HOURS = 1;
     const LS_KEY = "suprabond_portal_auth_v1";
 
     async function sha256Hex(text) {
@@ -168,7 +168,7 @@
         const pwd = document.getElementById("passwordInput").value;
         const hash = await sha256Hex(pwd);
         if (hash === STORED_HASH) {
-          const expiresAt = Date.now() + REMEMBER_DAYS * 24 * 60 * 60 * 1000;
+          const expiresAt = Date.now() + REMEMBER_HOURS * 60 * 60 * 1000;
           localStorage.setItem(LS_KEY, JSON.stringify({ expiresAt }));
           showPortal();
         } else {
